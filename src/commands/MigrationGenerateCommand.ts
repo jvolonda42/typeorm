@@ -58,6 +58,12 @@ export class MigrationGenerateCommand implements yargs.CommandModule {
                 default: false,
                 describe: "Custom timestamp for the migration name",
             })
+            .option("fk", {
+                alias: "includeForeignKeys",
+                type: "number",
+                default: true,
+                describe: "Remove foreign keys from the generated migration",
+            })
     }
 
     async handler(args: yargs.Arguments) {
@@ -91,15 +97,26 @@ export class MigrationGenerateCommand implements yargs.CommandModule {
 
                 if (args.pretty) {
                     sqlInMemory.upQueries.forEach((upQuery) => {
-                        upQuery.query = MigrationGenerateCommand.prettifyQuery(
-                            upQuery.query,
-                        )
+                        if (
+                            upQuery.query.indexOf("FOREIGN KEY") === -1 ||
+                            !args.ignoreForeignKeys
+                        ) {
+                            upQuery.query =
+                                MigrationGenerateCommand.prettifyQuery(
+                                    upQuery.query,
+                                )
+                        }
                     })
                     sqlInMemory.downQueries.forEach((downQuery) => {
-                        downQuery.query =
-                            MigrationGenerateCommand.prettifyQuery(
-                                downQuery.query,
-                            )
+                        if (
+                            downQuery.query.indexOf("FOREIGN KEY") === -1 ||
+                            args.includeForeignKeys
+                        ) {
+                            downQuery.query =
+                                MigrationGenerateCommand.prettifyQuery(
+                                    downQuery.query,
+                                )
+                        }
                     })
                 }
 
